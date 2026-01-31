@@ -68,43 +68,108 @@ SCRB:SetScript("OnEvent", function(_, event, arg1)
 
         addonTable.SettingsRegistrar()
 
-        -- Debug: /scrb vitality — dump Aspect of Harmony aura (450521) to chat
+        -- Debug: /scrb vitality or /scrb celestial — dump aura details to chat
         SLASH_SCRB1 = "/scrb"
         SlashCmdList["SCRB"] = function(msg)
             msg = msg and strlower(strtrim(msg)) or ""
+            local function DebugPrint(text)
+                if DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+                    DEFAULT_CHAT_FRAME:AddMessage("|cffb5a707SenseiClassResourceBar:|r " .. tostring(text))
+                else
+                    print("|cffb5a707SenseiClassResourceBar:|r " .. tostring(text))
+                end
+            end
+
+            local function SafeCall(label, fn)
+                if type(pcall) ~= "function" then
+                    DebugPrint(label .. " error: pcall not available.")
+                    return fn()
+                end
+                local ok, err = pcall(fn)
+                if not ok then
+                    DebugPrint(label .. " error: " .. tostring(err))
+                end
+                return ok, err
+            end
+
+            local function DumpAuraBySpellId(spellId, label)
+                DebugPrint(label .. " scan started.")
+
+                if C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID then
+                    local aura = C_UnitAuras.GetPlayerAuraBySpellID(spellId)
+                    if aura then
+                        DebugPrint("C_UnitAuras: found.")
+                        DebugPrint("  points[1]=" .. tostring(aura.points and aura.points[1])
+                            .. " value=" .. tostring(aura.value)
+                            .. " amount=" .. tostring(aura.amount)
+                            .. " absorb=" .. tostring(aura.absorb)
+                            .. " applications=" .. tostring(aura.applications)
+                            .. " expiration=" .. tostring(aura.expirationTime))
+                    else
+                        DebugPrint("C_UnitAuras: not found.")
+                    end
+                else
+                    DebugPrint("C_UnitAuras API not available.")
+                end
+
+                local unitAuraFound = false
+                if UnitAura then
+                    for i = 1, 60 do
+                        local auraOrName, _, _, _, _, _, _, _, _, auraSpellId, _, _, _, _, _, _, value1, value2, value3 = UnitAura("player", i, "HELPFUL")
+                        if not auraOrName then break end
+                        if type(auraOrName) == "table" then
+                            local aura = auraOrName
+                            local auraId = aura.spellId or aura.spellID
+                            if auraId == spellId then
+                                unitAuraFound = true
+                                DebugPrint("UnitAura: found table at index " .. i
+                                    .. " points[1]=" .. tostring(aura.points and aura.points[1])
+                                    .. " value=" .. tostring(aura.value)
+                                    .. " amount=" .. tostring(aura.amount)
+                                    .. " absorb=" .. tostring(aura.absorb)
+                                    .. " applications=" .. tostring(aura.applications)
+                                    .. " expiration=" .. tostring(aura.expirationTime))
+                                break
+                            end
+                        elseif auraSpellId == spellId then
+                            unitAuraFound = true
+                            DebugPrint("UnitAura: found at index " .. i
+                                .. " value1=" .. tostring(value1)
+                                .. " value2=" .. tostring(value2)
+                                .. " value3=" .. tostring(value3))
+                            break
+                        end
+                    end
+                    if not unitAuraFound then
+                        DebugPrint("UnitAura: not found.")
+                    end
+                else
+                    DebugPrint("UnitAura API not available.")
+                end
+            end
+
             if msg == "" or msg == "help" then
-                print("|cffb5a707SenseiClassResourceBar:|r /scrb vitality or /scrb debug - dump Aspect of Harmony aura 450521")
+                DebugPrint("/scrb vitality or /scrb celestial - dump aura details")
                 return
             end
             if msg == "vitality" or msg == "debug" then
-                print("|cffb5a707SenseiClassResourceBar:|r vitality debug started.")
-                local p = addonTable.prettyPrint or print
-                for i = 1, 60 do
-                    local name, icon, count, _, duration, expiration, source, _, _, spellId, _, _, _, _, _, _, value1, value2, value3 = UnitAura("player", i, "HELPFUL")
-                    if not name then break end
-                    if spellId == 450521 then
-                        p("Spell 450521 at buff index " .. i .. " | value1=" .. tostring(value1) .. " value2=" .. tostring(value2) .. " value3=" .. tostring(value3))
-                        for vi = 16, 24 do
-                            local v = select(vi, UnitAura("player", i, "HELPFUL"))
-                            if v ~= nil then p("  return[" .. vi .. "]=" .. tostring(v)) end
-                        end
+                DebugPrint("vitality debug started.")
+                SafeCall("vitality", function()
+                    DumpAuraBySpellId(450521, "Spell 450521")
+                end)
+                DebugPrint("vitality debug done.")
+            elseif msg == "celestial" or msg == "brew" or msg == "shield" then
+                DebugPrint("celestial debug started.")
+                SafeCall("celestial", function()
+                    DumpAuraBySpellId(322507, "Spell 322507")
+                    DumpAuraBySpellId(1241059, "Spell 1241059")
+                    if UnitGetTotalAbsorbs then
+                        DebugPrint("UnitGetTotalAbsorbs: " .. tostring(UnitGetTotalAbsorbs("player")))
+                    else
+                        DebugPrint("UnitGetTotalAbsorbs API not available.")
                     end
-                end
-                local aura = C_UnitAuras.GetPlayerAuraBySpellID(450521)
-                if aura then
-                    p("C_UnitAuras: aura 450521 found. points[1]=" .. tostring(aura.points and aura.points[1]))
-                    for k, v in pairs(aura) do
-                        if type(v) == "table" then
-                            p("  " .. tostring(k) .. "=table")
-                            for ki, vi in pairs(v) do p("    [" .. tostring(ki) .. "]=" .. tostring(vi)) end
-                        else
-                            p("  " .. tostring(k) .. "=" .. tostring(v))
-                        end
-                    end
-                else
-                    p("C_UnitAuras: aura 450521 not found.")
-                end
-                p("SCRB vitality debug done.")
+                end)
+                DebugPrint("celestial debug done.")
             end
         end
     end

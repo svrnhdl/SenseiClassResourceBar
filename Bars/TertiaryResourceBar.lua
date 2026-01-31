@@ -5,6 +5,86 @@ local L = addonTable.L
 
 local TertiaryResourceBarMixin = Mixin({}, addonTable.PowerBarMixin)
 
+local CELESTIAL_SHIELD_SPELL_IDS = {
+    322507, -- Celestial Brew
+    1241059, -- Celestial Infusion
+}
+
+local function GetAuraAmountFromUnitAuras(spellId)
+    if not UnitAura then
+        return nil
+    end
+
+    for i = 1, 60 do
+        local name, _, _, _, _, _, _, _, _, auraSpellId, _, _, _, _, _, _, value1, value2, value3 = UnitAura("player", i, "HELPFUL")
+        if not name then break end
+        if auraSpellId == spellId then
+            local amount = value1
+            if value2 and (not amount or value2 > amount) then
+                amount = value2
+            end
+            if value3 and (not amount or value3 > amount) then
+                amount = value3
+            end
+            return amount
+        end
+    end
+
+    return nil
+end
+
+local function GetAuraAmountFromData(auraData)
+    if not auraData then return nil end
+
+    local points = auraData.points
+    local amount = points and points[1]
+    if amount and amount > 0 then
+        return amount
+    end
+
+    amount = auraData.value
+    if amount and amount > 0 then
+        return amount
+    end
+
+    amount = auraData.amount
+    if amount and amount > 0 then
+        return amount
+    end
+
+    amount = auraData.absorb
+    if amount and amount > 0 then
+        return amount
+    end
+
+    return nil
+end
+
+local function GetCelestialShieldAmount()
+    local auraFound = false
+
+    for _, spellId in ipairs(CELESTIAL_SHIELD_SPELL_IDS) do
+        local auraData = C_UnitAuras.GetPlayerAuraBySpellID(spellId)
+        if auraData then
+            auraFound = true
+            local amount = GetAuraAmountFromData(auraData)
+            if not amount or amount <= 0 then
+                amount = GetAuraAmountFromUnitAuras(spellId)
+            end
+            if amount and amount > 0 then
+                return amount
+            end
+        end
+    end
+
+    if not auraFound then
+        return 0
+    end
+
+    -- Fallback: if the aura doesn't expose points, use total absorbs.
+    return UnitGetTotalAbsorbs("player") or 0
+end
+
 function TertiaryResourceBarMixin:GetResource()
     local playerClass = select(2, UnitClass("player"))
     local tertiaryResources = {
@@ -17,7 +97,7 @@ function TertiaryResourceBarMixin:GetResource()
         ["HUNTER"]      = nil,
         ["MAGE"]        = nil,
         ["MONK"]        = {
-            [268] = "VITALITY", -- Brewmaster (Master of Harmony - Aspect of Harmony)
+            [268] = "CELESTIAL_SHIELD", -- Brewmaster (Celestial Brew/Infusion shield)
         },
         ["PALADIN"]     = nil,
         ["PRIEST"]      = nil,
@@ -59,6 +139,13 @@ function TertiaryResourceBarMixin:GetResourceValue(resource)
         local auraData = C_UnitAuras.GetPlayerAuraBySpellID(395296) -- Ebon Might
         local current = auraData and (auraData.expirationTime - GetTime()) or 0
         local max = 20
+
+        return max, current
+    end
+
+    if resource == "CELESTIAL_SHIELD" then
+        local max = UnitHealthMax("player") or 1
+        local current = GetCelestialShieldAmount()
 
         return max, current
     end
@@ -116,10 +203,10 @@ addonTable.RegisteredBar.TertiaryResourceBar = {
         local spec = C_SpecializationInfo.GetSpecialization()
         local specID = C_SpecializationInfo.GetSpecializationInfo(spec)
         return specID == 1473 -- Augmentation
-            or (playerClass == "MONK" and specID == 268) -- Brewmaster (Master of Harmony)
+            or (playerClass == "MONK" and specID == 268) -- Brewmaster (Celestial Shield)
     end,
     -- No loadPredicate: bar is created for all classes; visibility is by GetResource() (nil = hide).
-    -- Evoker Augmentation shows EBON_MIGHT, Monk Brewmaster shows VITALITY; others see bar hidden.
+    -- Evoker Augmentation shows EBON_MIGHT, Monk Brewmaster shows CELESTIAL_SHIELD; others see bar hidden.
     loadPredicate = nil,
     lemSettings = function(bar, defaults)
         local dbName = bar:GetConfig().dbName
