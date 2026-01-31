@@ -72,38 +72,46 @@ SCRB:SetScript("OnEvent", function(_, event, arg1)
         SLASH_SCRB1 = "/scrb"
         SlashCmdList["SCRB"] = function(msg)
             msg = msg and strlower(strtrim(msg)) or ""
-            local p = addonTable.prettyPrint or print
+            local p = print
             local function DumpAuraBySpellId(spellId, label)
                 local found = false
-                for i = 1, 60 do
-                    local name, _, _, _, _, _, _, _, _, auraSpellId, _, _, _, _, _, _, value1, value2, value3 = UnitAura("player", i, "HELPFUL")
-                    if not name then break end
-                    if auraSpellId == spellId then
-                        found = true
-                        p(label .. " at buff index " .. i .. " | value1=" .. tostring(value1) .. " value2=" .. tostring(value2) .. " value3=" .. tostring(value3))
-                        for vi = 16, 24 do
-                            local v = select(vi, UnitAura("player", i, "HELPFUL"))
-                            if v ~= nil then p("  return[" .. vi .. "]=" .. tostring(v)) end
+                if UnitAura then
+                    for i = 1, 60 do
+                        local name, _, _, _, _, _, _, _, _, auraSpellId, _, _, _, _, _, _, value1, value2, value3 = UnitAura("player", i, "HELPFUL")
+                        if not name then break end
+                        if auraSpellId == spellId then
+                            found = true
+                            p(label .. " at buff index " .. i .. " | value1=" .. tostring(value1) .. " value2=" .. tostring(value2) .. " value3=" .. tostring(value3))
+                            for vi = 16, 24 do
+                                local v = select(vi, UnitAura("player", i, "HELPFUL"))
+                                if v ~= nil then p("  return[" .. vi .. "]=" .. tostring(v)) end
+                            end
                         end
                     end
-                end
-                if not found then
-                    p(label .. " not found in UnitAura.")
-                end
-
-                local aura = C_UnitAuras.GetPlayerAuraBySpellID(spellId)
-                if aura then
-                    p("C_UnitAuras: " .. label .. " found. points[1]=" .. tostring(aura.points and aura.points[1]))
-                    for k, v in pairs(aura) do
-                        if type(v) == "table" then
-                            p("  " .. tostring(k) .. "=table")
-                            for ki, vi in pairs(v) do p("    [" .. tostring(ki) .. "]=" .. tostring(vi)) end
-                        else
-                            p("  " .. tostring(k) .. "=" .. tostring(v))
-                        end
+                    if not found then
+                        p(label .. " not found in UnitAura.")
                     end
                 else
-                    p("C_UnitAuras: " .. label .. " not found.")
+                    p("UnitAura API not available.")
+                end
+
+                if C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID then
+                    local aura = C_UnitAuras.GetPlayerAuraBySpellID(spellId)
+                    if aura then
+                        p("C_UnitAuras: " .. label .. " found. points[1]=" .. tostring(aura.points and aura.points[1]))
+                        for k, v in pairs(aura) do
+                            if type(v) == "table" then
+                                p("  " .. tostring(k) .. "=table")
+                                for ki, vi in pairs(v) do p("    [" .. tostring(ki) .. "]=" .. tostring(vi)) end
+                            else
+                                p("  " .. tostring(k) .. "=" .. tostring(v))
+                            end
+                        end
+                    else
+                        p("C_UnitAuras: " .. label .. " not found.")
+                    end
+                else
+                    p("C_UnitAuras API not available.")
                 end
             end
 
@@ -113,14 +121,28 @@ SCRB:SetScript("OnEvent", function(_, event, arg1)
             end
             if msg == "vitality" or msg == "debug" then
                 print("|cffb5a707SenseiClassResourceBar:|r vitality debug started.")
-                DumpAuraBySpellId(450521, "Spell 450521")
-                p("SCRB vitality debug done.")
+                local ok, err = xpcall(function()
+                    DumpAuraBySpellId(450521, "Spell 450521")
+                end, function(e) return e end)
+                if not ok then
+                    print("|cffb5a707SenseiClassResourceBar:|r vitality debug error: " .. tostring(err))
+                end
+                print("|cffb5a707SenseiClassResourceBar:|r vitality debug done.")
             elseif msg == "celestial" or msg == "brew" or msg == "shield" then
                 print("|cffb5a707SenseiClassResourceBar:|r celestial debug started.")
-                DumpAuraBySpellId(322507, "Spell 322507")
-                DumpAuraBySpellId(1241059, "Spell 1241059")
-                p("UnitGetTotalAbsorbs: " .. tostring(UnitGetTotalAbsorbs("player")))
-                p("SCRB celestial debug done.")
+                local ok, err = xpcall(function()
+                    DumpAuraBySpellId(322507, "Spell 322507")
+                    DumpAuraBySpellId(1241059, "Spell 1241059")
+                    if UnitGetTotalAbsorbs then
+                        print("UnitGetTotalAbsorbs: " .. tostring(UnitGetTotalAbsorbs("player")))
+                    else
+                        print("UnitGetTotalAbsorbs API not available.")
+                    end
+                end, function(e) return e end)
+                if not ok then
+                    print("|cffb5a707SenseiClassResourceBar:|r celestial debug error: " .. tostring(err))
+                end
+                print("|cffb5a707SenseiClassResourceBar:|r celestial debug done.")
             end
         end
     end

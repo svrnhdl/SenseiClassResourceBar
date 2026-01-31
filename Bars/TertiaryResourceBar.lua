@@ -11,6 +11,10 @@ local CELESTIAL_SHIELD_SPELL_IDS = {
 }
 
 local function GetAuraAmountFromUnitAuras(spellId)
+    if not UnitAura then
+        return nil
+    end
+
     for i = 1, 60 do
         local name, _, _, _, _, _, _, _, _, auraSpellId, _, _, _, _, _, _, value1, value2, value3 = UnitAura("player", i, "HELPFUL")
         if not name then break end
