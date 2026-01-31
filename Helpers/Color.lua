@@ -124,6 +124,9 @@ function addonTable:GetResourceColor(resource)
         color = { r = 0.6, g = 0.8, b = 0.2 }
     elseif resource == "WHIRLWIND" then
         color = { r = 0.2, b = 0.8, g = 0.2 }
+    elseif resource == "CELESTIAL_SHIELD" then
+        color = { r = 0.35, g = 0.75, b = 1.0 }
+        settingKey = "CELESTIAL_SHIELD"
     elseif resource == "VITALITY" then
         color = { r = 0.4, g = 0.85, b = 0.6 } -- Aspect of Harmony (Master of Harmony)
         settingKey = "VITALITY"

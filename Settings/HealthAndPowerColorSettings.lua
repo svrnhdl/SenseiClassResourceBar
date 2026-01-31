@@ -141,6 +141,10 @@ local PowerData = {
         key = "EBON_MIGHT",
     },
     {
+        label = L["CELESTIAL_SHIELD"],
+        key = "CELESTIAL_SHIELD",
+    },
+    {
         label = L["VITALITY"],
         key = "VITALITY",
     },
