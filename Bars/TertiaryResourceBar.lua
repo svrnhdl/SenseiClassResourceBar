@@ -10,6 +10,52 @@ local CELESTIAL_SHIELD_SPELL_IDS = {
     1241059, -- Celestial Infusion
 }
 
+local function GetAuraAmountFromUnitAuras(spellId)
+    for i = 1, 60 do
+        local name, _, _, _, _, _, _, _, _, auraSpellId, _, _, _, _, _, _, value1, value2, value3 = UnitAura("player", i, "HELPFUL")
+        if not name then break end
+        if auraSpellId == spellId then
+            local amount = value1
+            if value2 and (not amount or value2 > amount) then
+                amount = value2
+            end
+            if value3 and (not amount or value3 > amount) then
+                amount = value3
+            end
+            return amount
+        end
+    end
+
+    return nil
+end
+
+local function GetAuraAmountFromData(auraData)
+    if not auraData then return nil end
+
+    local points = auraData.points
+    local amount = points and points[1]
+    if amount and amount > 0 then
+        return amount
+    end
+
+    amount = auraData.value
+    if amount and amount > 0 then
+        return amount
+    end
+
+    amount = auraData.amount
+    if amount and amount > 0 then
+        return amount
+    end
+
+    amount = auraData.absorb
+    if amount and amount > 0 then
+        return amount
+    end
+
+    return nil
+end
+
 local function GetCelestialShieldAmount()
     local auraFound = false
 
@@ -17,8 +63,10 @@ local function GetCelestialShieldAmount()
         local auraData = C_UnitAuras.GetPlayerAuraBySpellID(spellId)
         if auraData then
             auraFound = true
-            local points = auraData.points
-            local amount = points and points[1]
+            local amount = GetAuraAmountFromData(auraData)
+            if not amount or amount <= 0 then
+                amount = GetAuraAmountFromUnitAuras(spellId)
+            end
             if amount and amount > 0 then
                 return amount
             end

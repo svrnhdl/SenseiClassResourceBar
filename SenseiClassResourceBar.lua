@@ -68,31 +68,32 @@ SCRB:SetScript("OnEvent", function(_, event, arg1)
 
         addonTable.SettingsRegistrar()
 
-        -- Debug: /scrb vitality — dump Aspect of Harmony aura (450521) to chat
+        -- Debug: /scrb vitality or /scrb celestial — dump aura details to chat
         SLASH_SCRB1 = "/scrb"
         SlashCmdList["SCRB"] = function(msg)
             msg = msg and strlower(strtrim(msg)) or ""
-            if msg == "" or msg == "help" then
-                print("|cffb5a707SenseiClassResourceBar:|r /scrb vitality or /scrb debug - dump Aspect of Harmony aura 450521")
-                return
-            end
-            if msg == "vitality" or msg == "debug" then
-                print("|cffb5a707SenseiClassResourceBar:|r vitality debug started.")
-                local p = addonTable.prettyPrint or print
+            local p = addonTable.prettyPrint or print
+            local function DumpAuraBySpellId(spellId, label)
+                local found = false
                 for i = 1, 60 do
-                    local name, icon, count, _, duration, expiration, source, _, _, spellId, _, _, _, _, _, _, value1, value2, value3 = UnitAura("player", i, "HELPFUL")
+                    local name, _, _, _, _, _, _, _, _, auraSpellId, _, _, _, _, _, _, value1, value2, value3 = UnitAura("player", i, "HELPFUL")
                     if not name then break end
-                    if spellId == 450521 then
-                        p("Spell 450521 at buff index " .. i .. " | value1=" .. tostring(value1) .. " value2=" .. tostring(value2) .. " value3=" .. tostring(value3))
+                    if auraSpellId == spellId then
+                        found = true
+                        p(label .. " at buff index " .. i .. " | value1=" .. tostring(value1) .. " value2=" .. tostring(value2) .. " value3=" .. tostring(value3))
                         for vi = 16, 24 do
                             local v = select(vi, UnitAura("player", i, "HELPFUL"))
                             if v ~= nil then p("  return[" .. vi .. "]=" .. tostring(v)) end
                         end
                     end
                 end
-                local aura = C_UnitAuras.GetPlayerAuraBySpellID(450521)
+                if not found then
+                    p(label .. " not found in UnitAura.")
+                end
+
+                local aura = C_UnitAuras.GetPlayerAuraBySpellID(spellId)
                 if aura then
-                    p("C_UnitAuras: aura 450521 found. points[1]=" .. tostring(aura.points and aura.points[1]))
+                    p("C_UnitAuras: " .. label .. " found. points[1]=" .. tostring(aura.points and aura.points[1]))
                     for k, v in pairs(aura) do
                         if type(v) == "table" then
                             p("  " .. tostring(k) .. "=table")
@@ -102,9 +103,24 @@ SCRB:SetScript("OnEvent", function(_, event, arg1)
                         end
                     end
                 else
-                    p("C_UnitAuras: aura 450521 not found.")
+                    p("C_UnitAuras: " .. label .. " not found.")
                 end
+            end
+
+            if msg == "" or msg == "help" then
+                print("|cffb5a707SenseiClassResourceBar:|r /scrb vitality or /scrb celestial - dump aura details")
+                return
+            end
+            if msg == "vitality" or msg == "debug" then
+                print("|cffb5a707SenseiClassResourceBar:|r vitality debug started.")
+                DumpAuraBySpellId(450521, "Spell 450521")
                 p("SCRB vitality debug done.")
+            elseif msg == "celestial" or msg == "brew" or msg == "shield" then
+                print("|cffb5a707SenseiClassResourceBar:|r celestial debug started.")
+                DumpAuraBySpellId(322507, "Spell 322507")
+                DumpAuraBySpellId(1241059, "Spell 1241059")
+                p("UnitGetTotalAbsorbs: " .. tostring(UnitGetTotalAbsorbs("player")))
+                p("SCRB celestial debug done.")
             end
         end
     end
