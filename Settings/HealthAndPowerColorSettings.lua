@@ -140,6 +140,10 @@ local PowerData = {
         label = L["EBON_MIGHT"],
         key = "EBON_MIGHT",
     },
+    {
+        label = L["VITALITY"],
+        key = "VITALITY",
+    },
 }
 
 addonTable.SettingsPanelInitializers = addonTable.SettingsPanelInitializers or {}

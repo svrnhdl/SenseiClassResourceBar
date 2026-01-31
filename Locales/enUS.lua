@@ -63,6 +63,7 @@ local baseLocale = {
     ["SOUL_FRAGMENTS_VOID_META"] = "Devorer Soul Fragments Void Meta.",
     ["ESSENCE"]= POWER_TYPE_ESSENCE,
     ["EBON_MIGHT"] = "Ebon Might",
+    ["VITALITY"] = "Vitality",
 
     -- Bar names
     ["HEALTH_BAR_EDIT_MODE_NAME"] = "Health Bar",

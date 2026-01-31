@@ -62,6 +62,7 @@ local baseLocale = {
     ["SOUL_FRAGMENTS_VOID_META"] = "吞噬者灵魂残片（虚空形态）",
     ["ESSENCE"]= "精华",
     ["EBON_MIGHT"] = "黑檀之力",
+    ["VITALITY"] = "活力",
 
     -- Bar names
     ["HEALTH_BAR_EDIT_MODE_NAME"] = "生命条",

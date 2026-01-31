@@ -63,6 +63,7 @@ local baseLocale = {
     ["SOUL_FRAGMENTS_VOID_META"] = "Фрагменты души (Пожиратель - Метаморфоза Бездны)",
     ["ESSENCE"] = POWER_TYPE_ESSENCE,
     ["EBON_MIGHT"] = "Черная мощь",
+    ["VITALITY"] = "Жизненная сила",
 
     -- Bar names
     ["HEALTH_BAR_EDIT_MODE_NAME"] = "Полоса здоровья",

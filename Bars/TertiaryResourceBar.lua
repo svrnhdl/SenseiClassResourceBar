@@ -16,7 +16,9 @@ function TertiaryResourceBarMixin:GetResource()
         },
         ["HUNTER"]      = nil,
         ["MAGE"]        = nil,
-        ["MONK"]        = nil,
+        ["MONK"]        = {
+            [268] = "VITALITY", -- Brewmaster (Master of Harmony - Aspect of Harmony)
+        },
         ["PALADIN"]     = nil,
         ["PRIEST"]      = nil,
         ["ROGUE"]       = nil,
@@ -37,10 +39,15 @@ function TertiaryResourceBarMixin:GetResource()
     end
 
     if type(resource) == "table" then
-        return resource[specID]
-    else
-        return resource
+        resource = resource[specID]
     end
+
+    -- VITALITY: hidden until Blizzard exposes the vitality amount via the API (aura 450521 points[1] stays 0)
+    if resource == "VITALITY" then
+        return nil
+    end
+
+    return resource
 end
 
 function TertiaryResourceBarMixin:GetResourceValue(resource)
@@ -52,6 +59,16 @@ function TertiaryResourceBarMixin:GetResourceValue(resource)
         local auraData = C_UnitAuras.GetPlayerAuraBySpellID(395296) -- Ebon Might
         local current = auraData and (auraData.expirationTime - GetTime()) or 0
         local max = 20
+
+        return max, current
+    end
+
+    if resource == "VITALITY" then
+        -- Aspect of Harmony (450521): vitality amount is not exposed by the API (points[1] stays 0).
+        -- Bar shows 0% until/if Blizzard exposes it; structure is ready (max = UnitHealthMax, current = points[1]).
+        local auraData = C_UnitAuras.GetPlayerAuraBySpellID(450521)
+        local current = (auraData and auraData.points and auraData.points[1]) or 0
+        local max = UnitHealthMax("player") or 1
 
         return max, current
     end
@@ -68,6 +85,12 @@ function TertiaryResourceBarMixin:GetTagValues(resource, max, current, precision
 
     if resource == "EBON_MIGHT" then
         tagValues["[current]"] = function() return string.format("%.1f", AbbreviateNumbers(current)) end
+    end
+
+    if resource == "VITALITY" then
+        local pFormat = "%." .. (precision or 0) .. "f"
+        local percentStr = (max and max > 0) and string.format(pFormat, (current / max) * 100) or "0"
+        tagValues["[percent]"] = function() return percentStr end
     end
 
     return tagValues
@@ -89,14 +112,15 @@ addonTable.RegisteredBar.TertiaryResourceBar = {
         useResourceAtlas = false,
     },
     allowEditPredicate = function()
+        local playerClass = select(2, UnitClass("player"))
         local spec = C_SpecializationInfo.GetSpecialization()
         local specID = C_SpecializationInfo.GetSpecializationInfo(spec)
         return specID == 1473 -- Augmentation
+            or (playerClass == "MONK" and specID == 268) -- Brewmaster (Master of Harmony)
     end,
-    loadPredicate = function()
-        local playerClass = select(2, UnitClass("player"))
-        return playerClass == "EVOKER"
-    end,
+    -- No loadPredicate: bar is created for all classes; visibility is by GetResource() (nil = hide).
+    -- Evoker Augmentation shows EBON_MIGHT, Monk Brewmaster shows VITALITY; others see bar hidden.
+    loadPredicate = nil,
     lemSettings = function(bar, defaults)
         local dbName = bar:GetConfig().dbName
 

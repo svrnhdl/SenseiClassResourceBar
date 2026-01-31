@@ -189,7 +189,11 @@ end
 
 function BarMixin:GetData(layoutName)
     layoutName = layoutName or LEM.GetActiveLayoutName() or "Default"
-    return SenseiClassResourceBarDB[self.config.dbName][layoutName]
+    local db = SenseiClassResourceBarDB[self.config.dbName]
+    if not db[layoutName] then
+        db[layoutName] = CopyTable(self.defaults)
+    end
+    return db[layoutName]
 end
 
 ------------------------------------------------------------

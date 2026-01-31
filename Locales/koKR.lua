@@ -62,6 +62,7 @@ local baseLocale = {
     ["SOUL_FRAGMENTS_VOID_META"] = "영혼 포식자 파편 (공허 변신)",
     ["ESSENCE"] = "정수",
     ["EBON_MIGHT"] = "칠흑의 힘",
+    ["VITALITY"] = "활력",
 
     -- Bar names
     ["HEALTH_BAR_EDIT_MODE_NAME"] = "생명력 바",
